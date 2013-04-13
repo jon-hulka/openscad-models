@@ -17,7 +17,7 @@
 module gothic_arch(width,depth)
 {
 	radius=width*5/4;
-	intersection()
+	rotate([90,0,0])intersection()
 	{
 		translate([radius-width/2,0,0])cylinder(h=depth,r=radius,center=true);
 		translate([width/2-radius,0,0])cylinder(h=depth,r=radius,center=true);
@@ -26,32 +26,79 @@ module gothic_arch(width,depth)
 }
 module round_arch(width,depth)
 {
-	intersection()
+	rotate([90,0,0])intersection()
 	{
 		cylinder(h=depth,r=width/2,center=true);
-		translate([0,-width/2-1,0])cube(size=[width+1,width+2,depth+1],center=true);
+		//This will be used to cut out of the larger piece, so it extends down 0.01mm
+		translate([0,-width/2-0.99,0])cube(size=[width+1,width+2.01,depth+1],center=true);
 	}
 }
 
-rotate([0,30,0])difference()
+module solid_structure(width)
 {
-	union()
-	{
-		rotate([0,90,0])gothic_arch(400,420);
-		gothic_arch(400,420);
-	}
-	union()
-	{
-		rotate([0,90,0])round_arch(380,430);
-		round_arch(380,430);
-	}
-	intersection()
+	difference()
 	{
 		union()
 		{
-			rotate([0,90,0])gothic_arch(380,430);
-			gothic_arch(380,420);
+			rotate([0,0,90])gothic_arch(width+20,width+40);
+			gothic_arch(width+20,width+40);
 		}
-		translate([0,-415,0])cube(size=430,center=true);
+		union()
+		{
+			rotate([0,0,90])round_arch(width,width+50);
+			round_arch(width,width+50);
+		}
+		intersection()
+		{
+			union()
+			{
+				rotate([0,0,90])gothic_arch(width,width+50);
+				gothic_arch(width,width+50);
+			}
+			translate([0,0,-width-40])cube(size=width+60,center=true);
+		}
 	}
 }
+
+module beam(width,thickness)
+{
+	union()
+	{
+		difference()
+		{
+			gothic_arch(width+thickness*2,thickness);
+			gothic_arch(width,thickness+1);
+		}
+		difference()
+		{
+			round_arch(width+thickness*2,thickness);
+			round_arch(width,thickness+1);
+		}
+		intersection()
+		{
+			gothic_arch(width+thickness*2,thickness);
+			translate([0,0,-width/2-thickness*3/2]) cube(size=[width,thickness,thickness],center=true);
+		}
+	}
+}
+module draw_beams()
+{
+w=400;
+t=10;
+union()
+{
+	for(i=[0:3])
+	{
+		rotate([0,0,90*i])
+		{
+			translate([0,w/2+t*3/2,0]) beam(w,t);
+		}
+	}
+	for(i=[0:1])
+	{
+		rotate([0,0,45+90*i]) scale([sqrt(2),1,1]) beam(w,t);
+		rotate([0,0,90*i]) translate([0,0,-w-t/2]) cube(size=[w+t*4,t,t],center=true);
+	}
+}
+}
+draw_beams();
